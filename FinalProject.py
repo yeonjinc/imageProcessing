@@ -78,7 +78,7 @@ class App():
         
         # Create many empty CANVASes
         for i in range(2):
-            self.canvas = tk.Canvas(self.frame2, bg="black")
+            self.canvas = tk.Canvas(self.frame2, bg="floral white")
             self.canvas.pack(side=tk.LEFT)
         
         # Create a CANVAS for additional features
@@ -116,7 +116,7 @@ class App():
         
         # Create a SCALE that lets the user mosaic the image
         self.scl_mosc=tk.Scale(
-            self.canvas_feat, from_=1, to=MAXDIM//2, orient=tk.HORIZONTAL, 
+            self.canvas_feat, from_=1, to=40, orient=tk.HORIZONTAL, 
             command = self.mosaic_image, sliderlength=50, 
             label="Mosaic", font="Tahoma 12")
         self.scl_mosc.pack(anchor=tk.SE)
@@ -147,19 +147,40 @@ class App():
             self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.NEWcv_img))
             self.canvas1.create_image(MAXDIM//2, MAXDIM//2, image=self.photo, anchor=tk.CENTER)
     
+    def mosaic_effect(self, k):
+        img_mosc = np.zeros_like(self.cv_img)
+        for ch in range(3):  # all three bgr channels
+            img = self.cv_img[:,:,ch]
+
+            # save a "small photo" for every "k"
+            img_small = img[0::k, 0::k]
+            h, w = img_small.shape
+
+            # new image frame
+            x, y, ignore = self.cv_img.shape
+            img_ch = np.zeros((x,y))
+
+            # fill picture with mosaic-ed pixels
+            for i in range(h):
+                for j in range(w):
+                    if (i*k) < img.shape[0] | (j*k) < img.shape[1]:
+                        img_ch[(i*k):(i*k)+k, (j*k):(j*k)+k] = img_small[i][j]
+
+            img_mosc[:,:,ch] = img_ch
+        return img_mosc
+                
+    
     # Callback for the "Mosaic" Scale
     def mosaic_image(self, k):
         k = self.scl_mosc.get()
-        # cancel out the effect
-        if k == 0:
+        
+        if k == 1:
             self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.cv_img))
             self.canvas1.create_image(MAXDIM//2, MAXDIM//2, image=self.photo, anchor=tk.CENTER)
         else:
-            self.NEWcv_img = cv2.resize(self.cv_img, (MAXDIM//k, MAXDIM//k), interpolation=cv2.INTER_LINEAR)
+            self.NEWcv_img = self.mosaic_effect(k)
             self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.NEWcv_img))
             self.canvas1.create_image(MAXDIM//2, MAXDIM//2, image=self.photo, anchor=tk.CENTER)
-        
-        # check if 
     
     # Callback for the "Load" Button
     def load(self):
